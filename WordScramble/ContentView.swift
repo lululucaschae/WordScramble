@@ -15,15 +15,24 @@ struct ContentView: View {
     @State private var errorTitle = ""
     @State private var errorMessage = ""
     @State private var isErrorShowing = false
+    
+    @State private var userScore = 0
+    @FocusState private var isFocused: Bool
 
     
     
     var body: some View {
         NavigationView {
             List {
+                
                 Section {
                     TextField("Enter your word", text: $newWord)
                         .autocapitalization(.none)
+                        .focused($isFocused)
+                    
+                } header: {
+                    Text("Your current score is \(userScore)")
+                        .font(.headline)
                 }
                 Section {
                     ForEach(usedWords, id: \.self) { item in
@@ -32,6 +41,12 @@ struct ContentView: View {
                             Text(item)
                         }
                     }
+                }
+            }
+            .toolbar {
+                Button("New Word") {
+                    startGame()
+                    resetGame()
                 }
             }
             .navigationTitle(rootWord)
@@ -48,28 +63,52 @@ struct ContentView: View {
     
     func addNewWord() {
         let answer = newWord.lowercased().trimmingCharacters(in: .whitespacesAndNewlines)
-        guard answer.count > 0 else { return }
+        guard answer.count > 2  else {
+            wordError(title: "Word too short", text: "Choose a word at least three characters long")
+            userScore -= 1
+            return
+        }
         
         guard !isOriginal(inputWord: answer) else {
             wordError(title: "Word used already", text: "Be more original")
+            userScore -= 1
             return
         }
         
         guard isReal(inputWord: answer) else {
             wordError(title: "Word isn't in the dictonary", text: "Be smarter")
+            userScore -= 1
             return
         }
         
         guard isPossible(inputWord: answer) else {
             wordError(title: "Word can't be made with root word", text: "Be more accurate")
+            userScore -= 1
             return
         }
         withAnimation {
             usedWords.insert(answer, at: 0)
         }
         
+        switch answer.count {
+        case 3:
+            userScore += 1
+        case 4:
+            userScore += 2
+        case 5:
+            userScore += 4
+        case 6:
+            userScore += 7
+        case 7:
+            userScore += 10
+        case 8:
+            userScore += 20
+        default:
+            break
+        }
         
         
+        isFocused = true
         newWord = ""
         
     }
@@ -115,11 +154,29 @@ struct ContentView: View {
         return misspelledRange.location == NSNotFound
     }
     
+
+    
     func wordError(title: String, text: String) {
         errorTitle = title
         errorMessage = text
         isErrorShowing = true
     }
+    
+    func countScore() {
+        
+    }
+    
+    func resetGame() {
+        userScore = 0
+        for _ in usedWords {
+            withAnimation {
+            usedWords.remove(at: 0)
+            }
+        }
+        
+    }
+    
+    
     
     
 }
